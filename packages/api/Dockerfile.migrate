@@ -1,0 +1,23 @@
+# Migration runner
+FROM node:18-alpine AS base
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+COPY packages/api/package.json ./packages/api/
+RUN npm install
+
+# Copy prisma schema
+COPY packages/api/prisma ./packages/api/prisma
+
+WORKDIR /app/packages/api
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Default command will be overridden in docker-compose
+CMD ["npx", "prisma", "migrate", "deploy"]

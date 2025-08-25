@@ -1,0 +1,37 @@
+{
+  "name": "@flowtie/dashboard",
+  "version": "0.1.0",
+  "description": "Flowtie web dashboard",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "jest",
+    "lint": "next lint",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "next": "^13.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@tanstack/react-query": "^4.29.0",
+    "socket.io-client": "^4.7.2",
+    "tailwindcss": "^3.3.0",
+    "@headlessui/react": "^1.7.15",
+    "@heroicons/react": "^2.0.18",
+    "react-hook-form": "^7.45.0",
+    "zod": "^3.22.0",
+    "@hookform/resolvers": "^3.1.1",
+    "react-hot-toast": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.45.0",
+    "eslint-config-next": "^13.4.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24"
+  }
+}

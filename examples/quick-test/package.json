@@ -1,0 +1,12 @@
+{
+  "name": "flowtie-quick-test",
+  "version": "1.0.0",
+  "description": "Quick test of Flowtie SDK with sample data",
+  "main": "test-sdk.js",
+  "scripts": {
+    "test": "node test-sdk.js"
+  },
+  "dependencies": {
+    "@flowtie/sdk-js": "file:../../packages/sdk-js"
+  }
+}

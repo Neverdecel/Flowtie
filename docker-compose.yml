@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: flowtie-postgres
+    environment:
+      POSTGRES_DB: flowtie
+      POSTGRES_USER: flowtie
+      POSTGRES_PASSWORD: flowtie_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowtie"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: flowtie-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    container_name: flowtie-api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://flowtie:flowtie_password@postgres:5432/flowtie
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      ALLOWED_ORIGINS: http://localhost:3000,http://dashboard:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./packages/api/prisma:/app/prisma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Dashboard Web Interface
+  dashboard:
+    build:
+      context: .
+      dockerfile: packages/dashboard/Dockerfile
+    container_name: flowtie-dashboard
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Database Migration Runner (runs once)
+  migrate:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile.migrate
+    container_name: flowtie-migrate
+    environment:
+      DATABASE_URL: postgresql://flowtie:flowtie_password@postgres:5432/flowtie
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./packages/api/prisma:/app/prisma
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: flowtie-network

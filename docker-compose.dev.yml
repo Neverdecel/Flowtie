@@ -1,0 +1,26 @@
+# Development overrides for docker-compose.yml
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./packages/api/src:/app/packages/api/src
+      - ./packages/api/prisma:/app/packages/api/prisma
+    command: ["npm", "run", "dev"]
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: packages/dashboard/Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./packages/dashboard/src:/app/packages/dashboard/src
+      - ./packages/dashboard/pages:/app/packages/dashboard/pages
+      - ./packages/dashboard/components:/app/packages/dashboard/components
+    command: ["npm", "run", "dev"]

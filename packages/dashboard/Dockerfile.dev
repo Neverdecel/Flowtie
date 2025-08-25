@@ -1,0 +1,17 @@
+# Development Dockerfile for Dashboard
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+COPY packages/dashboard/package.json ./packages/dashboard/
+RUN npm install
+
+# Copy source code
+COPY packages/dashboard ./packages/dashboard/
+WORKDIR /app/packages/dashboard
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

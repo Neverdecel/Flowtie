@@ -1,0 +1,12 @@
+{
+  "name": "flowtie-basic-example",
+  "version": "1.0.0",
+  "description": "Basic usage example for Flowtie SDK",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@flowtie/sdk-js": "^0.1.0"
+  }
+}

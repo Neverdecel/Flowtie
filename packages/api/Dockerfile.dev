@@ -1,0 +1,23 @@
+# Development Dockerfile for API
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+COPY packages/api/package.json ./packages/api/
+RUN npm install
+
+# Copy source code
+COPY packages/api ./packages/api/
+WORKDIR /app/packages/api
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+EXPOSE 3001
+
+CMD ["npm", "run", "dev"]

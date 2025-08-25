@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  projects     Project[]
+  prompts      Prompt[]
+  abTests      ABTest[]
+  testResults  ABTestResult[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  apiKey      String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId String
+
+  prompts Prompt[]
+  abTests ABTest[]
+
+  @@map("projects")
+}
+
+model Prompt {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  variables   Json        @default("{}")
+  status      PromptStatus @default(DRAFT)
+  version     Int         @default(1)
+  parentId    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+
+  parent   Prompt?  @relation("PromptVersions", fields: [parentId], references: [id])
+  versions Prompt[] @relation("PromptVersions")
+
+  abTestVariants ABTestVariant[]
+  usageLogs      PromptUsage[]
+
+  @@unique([projectId, name, version])
+  @@map("prompts")
+}
+
+model ABTest {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  status      TestStatus  @default(DRAFT)
+  trafficSplit Json       @default("{}")
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String
+
+  variants ABTestVariant[]
+  results  ABTestResult[]
+
+  @@map("ab_tests")
+}
+
+model ABTestVariant {
+  id        String   @id @default(cuid())
+  name      String
+  traffic   Float    @default(0.5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  abTest   ABTest @relation(fields: [abTestId], references: [id])
+  abTestId String
+
+  prompt   Prompt @relation(fields: [promptId], references: [id])
+  promptId String
+
+  results ABTestResult[]
+
+  @@unique([abTestId, name])
+  @@map("ab_test_variants")
+}
+
+model ABTestResult {
+  id         String   @id @default(cuid())
+  userId     String?
+  sessionId  String
+  success    Boolean
+  latency    Float?
+  feedback   Json?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  // Relations
+  abTest    ABTest        @relation(fields: [abTestId], references: [id])
+  abTestId  String
+
+  variant   ABTestVariant @relation(fields: [variantId], references: [id])
+  variantId String
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("ab_test_results")
+}
+
+model PromptUsage {
+  id        String   @id @default(cuid())
+  sessionId String
+  latency   Float?
+  success   Boolean
+  tokens    Int?
+  cost      Float?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  // Relations
+  prompt   Prompt @relation(fields: [promptId], references: [id])
+  promptId String
+
+  @@map("prompt_usage")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PromptStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TestStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  PAUSED
+}
