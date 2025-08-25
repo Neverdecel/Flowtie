@@ -1,5 +1,4 @@
 {
-  "root": true,
   "extends": [
     "eslint:recommended",
     "@typescript-eslint/recommended"
@@ -21,14 +20,5 @@
     "prefer-const": "error",
     "no-var": "error"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "*.js"],
-  "overrides": [
-    {
-      "files": ["packages/dashboard/**/*"],
-      "extends": ["next/core-web-vitals"],
-      "env": {
-        "browser": true
-      }
-    }
-  ]
+  "ignorePatterns": ["dist/", "node_modules/"]
 }

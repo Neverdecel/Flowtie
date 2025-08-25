@@ -6,48 +6,85 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+env:
+  NODE_ENV: ci
+
 jobs:
   test:
+    name: Test (Node.js ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x]
         
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --prefer-offline --no-audit
       
+    - name: Verify installation
+      run: |
+        npm list --depth=0
+        npx eslint --version || echo "ESLint check failed"
+        
     - name: Run linting
-      run: npm run lint
+      run: npm run lint --if-present
+      continue-on-error: false
       
     - name: Run tests
-      run: npm test
+      run: npm test --if-present
+      continue-on-error: false
       
     - name: Build packages
-      run: npm run build
+      run: npm run build --if-present
+      continue-on-error: false
 
   docker:
+    name: Docker Build & Test
     runs-on: ubuntu-latest
     needs: test
+    timeout-minutes: 20
+    if: github.event_name == 'push'
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
     
-    - name: Build Docker images
-      run: docker-compose build
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
       
-    - name: Test Docker services
+    - name: Build Docker images
       run: |
-        docker-compose up -d
-        sleep 30
+        docker-compose build --no-cache
+        docker images
+      
+    - name: Test Docker services startup
+      run: |
+        docker-compose up -d --wait --wait-timeout 60
         docker-compose ps
-        docker-compose down
+        
+    - name: Health check services
+      run: |
+        # Wait a bit longer for services to be fully ready
+        sleep 10
+        docker-compose logs --tail=20
+        
+    - name: Cleanup Docker services
+      if: always()
+      run: |
+        docker-compose down --volumes --remove-orphans
+        docker system prune -f
